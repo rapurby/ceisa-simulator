@@ -2,15 +2,42 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.api.routes import h2h, declarations, auth
-from app.core.database import init_db
+from app.core.database import init_db, AsyncSessionLocal
 from app.core.config import settings
 import logging
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def _seed_admin():
+    """Create default admin account if none exists."""
+    # Import models here so they're registered with Base before create_all
+    from app.models.user import User
+    from app.models.declaration import IncomingDeclaration  # noqa
+    from app.core.security import hash_password
+    from sqlalchemy import select
+
+    async with AsyncSessionLocal() as db:
+        existing = await db.execute(select(User).where(User.email == "admin@ceisa.go.id"))
+        if existing.scalar_one_or_none():
+            return
+        admin = User(
+            name="Admin CEISA",
+            email="admin@ceisa.go.id",
+            password=hash_password("ceisa2026"),
+            role="admin",
+            is_active=True,
+        )
+        db.add(admin)
+        await db.commit()
+        logger.info("✅ Admin CEISA created: admin@ceisa.go.id / ceisa2026")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Import models before create_all so tables are registered
+    from app.models import user, declaration  # noqa
     await init_db()
+    await _seed_admin()
     yield
 
 app = FastAPI(
