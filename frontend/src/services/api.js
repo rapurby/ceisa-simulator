@@ -28,10 +28,11 @@ export const authAPI = {
 }
 
 export const declarationAPI = {
-  list:   (params) => api.get('/declarations', { params }),
-  get:    (id)     => api.get(`/declarations/${id}`),
-  review: (id, body) => api.patch(`/declarations/${id}/review`, body),
-  stats:  ()       => api.get('/declarations/stats'),
+  list:      (params) => api.get('/declarations', { params }),
+  get:       (id)     => api.get(`/declarations/${id}`),
+  review:    (id, body) => api.patch(`/declarations/${id}/review`, body),
+  stats:     ()       => api.get('/declarations/stats'),
+  sourceDoc: (id)     => api.get(`/declarations/${id}/source-document`, { responseType: 'blob' }),
 }
 
 export default api

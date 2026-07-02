@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # API key that DeclarAI (CDP) must send when submitting declarations
     CDP_API_KEY: str = "cdp-declarai-key-2026"
 
+    # URL of DeclarAI (CDP) backend — for sending review callbacks and fetching source documents
+    CDP_API_URL: str = ""
+
     APP_ENV: str = "development"
     FRONTEND_URL: str = "http://localhost:5174"
 

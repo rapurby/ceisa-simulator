@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { declarationAPI } from '../services/api.js'
-import { ArrowLeft, CheckCircle, XCircle, Clock, Package } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Clock, Package, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const Field = ({ label, value }) => (
@@ -51,6 +51,16 @@ export default function DeclarationDetail() {
   if (!decl) return null
 
   const isDone = decl.status !== 'pending'
+
+  const handleViewDoc = async () => {
+    try {
+      const resp = await declarationAPI.sourceDoc(decl.id)
+      const url = URL.createObjectURL(resp.data)
+      window.open(url, '_blank')
+    } catch {
+      toast.error('Gagal mengambil dokumen dari CDP')
+    }
+  }
   const payload = decl.raw_payload || {}
   const goods = payload.goods || []
 
@@ -117,6 +127,16 @@ export default function DeclarationDetail() {
           <div style={{ fontSize: 12, fontWeight: 600 }}>{decl.cdp_source}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>CDP ID</div>
           <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{decl.cdp_declaration_id || '—'}</div>
+          {decl.has_document && (
+            <button onClick={handleViewDoc} style={{
+              marginTop: 10, display: 'flex', alignItems: 'center', gap: 5,
+              padding: '6px 10px', borderRadius: 7, border: '1px solid var(--border)',
+              background: 'var(--bg)', color: 'var(--text-secondary)',
+              fontSize: 12, cursor: 'pointer', fontWeight: 500,
+            }}>
+              <FileText size={13}/> Lihat Dokumen Asli
+            </button>
+          )}
         </div>
       </div>
 
