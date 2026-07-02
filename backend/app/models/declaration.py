@@ -11,7 +11,7 @@ class DeclarationStatus(str, enum.Enum):
     REJECTED = "rejected"   # ditolak (manual)
 
 class IncomingDeclaration(Base):
-    __tablename__ = "incoming_declarations"
+    __tablename__ = "ceisa_declarations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
