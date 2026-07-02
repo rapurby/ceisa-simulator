@@ -1,0 +1,36 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary:   #0f4c81;   /* Navy blue — CEISA/Bea Cukai theme */
+  --primary-light: #1565c0;
+  --accent:    #1976d2;
+  --success:   #2e7d32;
+  --warning:   #e65100;
+  --danger:    #c62828;
+  --bg:        #f0f4f8;
+  --card:      #ffffff;
+  --border:    #dde3ec;
+  --text-primary: #1a2433;
+  --text-secondary: #5a6a7e;
+  --text-muted: #8496b0;
+  --hover:     #f5f7fa;
+  --radius:    8px;
+  --shadow:    0 1px 4px rgba(0,0,0,0.08);
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-primary); font-size: 14px; }
+
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; font-size: 14px; }
+a { text-decoration: none; color: inherit; }
+
+/* Status badges */
+.badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.badge-pending  { background: rgba(230,81,0,0.1);  color: #e65100; }
+.badge-accepted { background: rgba(46,125,50,0.1); color: #2e7d32; }
+.badge-rejected { background: rgba(198,40,40,0.1); color: #c62828; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccd4e0; border-radius: 3px; }
