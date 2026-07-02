@@ -20,7 +20,15 @@ class IncomingDeclaration(Base):
     cdp_source         = Column(String, default="DeclarAI / Cikarang Dry Port")
 
     # Status
-    status = Column(SAEnum(DeclarationStatus), default=DeclarationStatus.PENDING, index=True)
+    # PENTING: nama type enum HARUS eksplisit dan unik ("ceisa_declaration_status").
+    # Tanpa ini SQLAlchemy memakai nama default "declarationstatus" yang SUDAH ada
+    # di database gabungan (milik DeclarAI, isinya uploaded/processing/dll) —
+    # insert 'pending' akan ditolak Postgres.
+    status = Column(
+        SAEnum(DeclarationStatus, name="ceisa_declaration_status"),
+        default=DeclarationStatus.PENDING,
+        index=True,
+    )
     registration_number = Column(String, nullable=True)   # BC reg number setelah accepted
     review_notes        = Column(Text, nullable=True)
     reviewed_by         = Column(String, nullable=True)

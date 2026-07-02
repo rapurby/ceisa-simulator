@@ -37,7 +37,12 @@ async def lifespan(app: FastAPI):
     # Import models before create_all so tables are registered
     from app.models import user, declaration  # noqa
     await init_db()
-    await _seed_admin()
+    try:
+        await _seed_admin()
+    except Exception as e:
+        # Jangan biarkan kegagalan seed mematikan startup (bikin deploy
+        # gagal healthcheck) — log keras supaya kelihatan di Railway logs.
+        logger.error(f"❌ Seed admin FAILED (login tidak akan bisa sampai ini dibereskan): {e}")
     yield
 
 app = FastAPI(
