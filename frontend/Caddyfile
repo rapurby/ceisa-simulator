@@ -1,6 +1,19 @@
 :{$PORT:80} {
-    root * /srv
     encode gzip
-    try_files {path} /index.html
-    file_server
+
+    # Proxy semua /api/* dan /h2h/* ke backend service
+    handle /api/* {
+        reverse_proxy {$BACKEND_URL}
+    }
+
+    handle /h2h/* {
+        reverse_proxy {$BACKEND_URL}
+    }
+
+    # Semua route lain → React SPA
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
 }
