@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { declarationAPI } from '../services/api.js'
-import { ArrowLeft, CheckCircle, XCircle, Clock, Package, FileText } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Clock, Package, FileText, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const Field = ({ label, value }) => (
@@ -30,24 +30,28 @@ export default function DeclarationDetail() {
 
   const load = async () => {
     try { const r = await declarationAPI.get(id); setDecl(r.data) }
-    catch { toast.error('Deklarasi tidak ditemukan') }
+    catch { toast.error('Declaration not found') }
     finally { setLoading(false) }
   }
 
   useEffect(() => { load() }, [id])
 
   const review = async (action) => {
-    if (!window.confirm(`${action === 'accept' ? 'Terima' : 'Tolak'} deklarasi ini?`)) return
+    if (!notes.trim() && action === 'reject') {
+      toast.error('Please provide a reason for rejection')
+      return
+    }
+    if (!window.confirm(`${action === 'accept' ? 'Accept' : 'Reject'} this declaration?`)) return
     setActing(true)
     try {
       await declarationAPI.review(id, { action, notes })
-      toast.success(action === 'accept' ? 'Deklarasi diterima' : 'Deklarasi ditolak')
+      toast.success(action === 'accept' ? 'Declaration accepted' : 'Declaration rejected')
       load()
-    } catch { toast.error('Gagal memproses') }
+    } catch { toast.error('Failed to process') }
     finally { setActing(false) }
   }
 
-  if (loading) return <div style={{ padding: 40, color: 'var(--text-muted)' }}>Memuat...</div>
+  if (loading) return <div style={{ padding: 40, color: 'var(--text-muted)' }}>Loading...</div>
   if (!decl) return null
 
   const isDone = decl.status !== 'pending'
@@ -58,7 +62,7 @@ export default function DeclarationDetail() {
       const url = URL.createObjectURL(resp.data)
       window.open(url, '_blank')
     } catch {
-      toast.error('Gagal mengambil dokumen dari CDP')
+      toast.error('Failed to retrieve document from CDP')
     }
   }
   const payload = decl.raw_payload || {}
@@ -79,23 +83,8 @@ export default function DeclarationDetail() {
           border: '1px solid var(--border)', borderRadius: 7, background: 'var(--card)',
           color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer',
         }}>
-          <ArrowLeft size={14}/> Kembali
+          <ArrowLeft size={14}/> Back
         </button>
-        {!isDone && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <input value={notes} onChange={e => setNotes(e.target.value)}
-              placeholder="Catatan (opsional)..."
-              style={{ padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 7, fontSize: 13, minWidth: 200 }} />
-            <button disabled={acting} onClick={() => review('reject')} style={{
-              padding: '7px 14px', borderRadius: 7, background: 'rgba(198,40,40,0.1)',
-              color: '#c62828', border: 'none', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5,
-            }}><XCircle size={13}/> Tolak</button>
-            <button disabled={acting} onClick={() => review('accept')} style={{
-              padding: '7px 14px', borderRadius: 7, background: 'var(--primary)',
-              color: 'white', border: 'none', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5,
-            }}><CheckCircle size={13}/> Terima</button>
-          </div>
-        )}
       </div>
 
       {/* Hero */}
@@ -110,20 +99,31 @@ export default function DeclarationDetail() {
             <span className={`badge badge-${decl.status}`}>{decl.status}</span>
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-            {decl.registration_number || 'Belum ada nomor registrasi'}
+            {decl.registration_number || 'No registration number yet'}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Diterima: {decl.received_at ? new Date(decl.received_at).toLocaleString('id-ID') : '—'}
-            {decl.reviewed_by && <span style={{ marginLeft: 12 }}>· Diproses oleh: <strong>{decl.reviewed_by}</strong></span>}
+            Received: {decl.received_at ? new Date(decl.received_at).toLocaleString('en-US') : '—'}
+            {decl.reviewed_by && <span style={{ marginLeft: 12 }}>· Reviewed by: <strong>{decl.reviewed_by}</strong></span>}
           </div>
           {decl.review_notes && (
-            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg)', padding: '6px 10px', borderRadius: 6 }}>
-              Catatan: {decl.review_notes}
+            <div style={{
+              marginTop: 10, display: 'flex', alignItems: 'flex-start', gap: 8,
+              background: decl.status === 'rejected' ? 'rgba(198,40,40,0.07)' : 'rgba(13,159,110,0.07)',
+              border: `1px solid ${decl.status === 'rejected' ? 'rgba(198,40,40,0.2)' : 'rgba(13,159,110,0.2)'}`,
+              padding: '10px 14px', borderRadius: 8,
+            }}>
+              <MessageSquare size={14} style={{ marginTop: 1, flexShrink: 0, color: decl.status === 'rejected' ? '#c62828' : '#0d9f6e' }} />
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: decl.status === 'rejected' ? '#c62828' : '#0d9f6e', marginBottom: 3 }}>
+                  Review Notes
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{decl.review_notes}</div>
+              </div>
             </div>
           )}
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Sumber</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Source</div>
           <div style={{ fontSize: 12, fontWeight: 600 }}>{decl.cdp_source}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>CDP ID</div>
           <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{decl.cdp_declaration_id || '—'}</div>
@@ -134,32 +134,77 @@ export default function DeclarationDetail() {
               background: 'var(--bg)', color: 'var(--text-secondary)',
               fontSize: 12, cursor: 'pointer', fontWeight: 500,
             }}>
-              <FileText size={13}/> Lihat Dokumen Asli
+              <FileText size={13}/> View Original Document
             </button>
           )}
         </div>
       </div>
 
-      <Section title="Importer / Eksportir">
-        <Field label="Importir (Consignee)" value={decl.consignee} />
+      {/* Review panel — only shown while pending */}
+      {!isDone && (
+        <div style={{
+          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12,
+          padding: '18px 20px', marginBottom: 14,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 12 }}>
+            <MessageSquare size={13} style={{ verticalAlign: 'middle', marginRight: 5 }}/>
+            Review Decision
+          </div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+            Notes to sender <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(required for rejection)</span>
+          </label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            placeholder="Enter notes for the CDP operator — they will see this message on their declaration page..."
+            rows={3}
+            style={{
+              width: '100%', padding: '10px 12px',
+              border: '1px solid var(--border)', borderRadius: 8,
+              fontSize: 13, resize: 'vertical', fontFamily: 'inherit',
+              background: 'var(--bg)', color: 'var(--text-primary)',
+              boxSizing: 'border-box', marginBottom: 12,
+            }}
+          />
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button disabled={acting} onClick={() => review('reject')} style={{
+              padding: '8px 18px', borderRadius: 8, background: 'rgba(198,40,40,0.1)',
+              color: '#c62828', border: '1px solid rgba(198,40,40,0.2)', fontWeight: 600,
+              fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            }}>
+              <XCircle size={14}/> Reject
+            </button>
+            <button disabled={acting} onClick={() => review('accept')} style={{
+              padding: '8px 18px', borderRadius: 8, background: 'var(--primary)',
+              color: 'white', border: 'none', fontWeight: 600,
+              fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            }}>
+              <CheckCircle size={14}/> Accept
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Section title="Importer / Exporter">
+        <Field label="Importer (Consignee)" value={decl.consignee} />
         <Field label="NPWP" value={decl.npwp} />
-        <Field label="Eksportir (Shipper)" value={decl.shipper} />
+        <Field label="Exporter (Shipper)" value={decl.shipper} />
       </Section>
 
-      <Section title="Dokumen & Pengiriman">
-        <Field label="No. Invoice" value={decl.invoice_number} />
-        <Field label="Tanggal Invoice" value={decl.invoice_date} />
-        <Field label="No. B/L" value={decl.bl_number} />
-        <Field label="Kapal" value={decl.vessel_name} />
-        <Field label="Pelabuhan Muat" value={decl.port_of_loading} />
-        <Field label="Pelabuhan Bongkar" value={decl.port_of_discharge} />
+      <Section title="Document & Shipment">
+        <Field label="Invoice No." value={decl.invoice_number} />
+        <Field label="Invoice Date" value={decl.invoice_date} />
+        <Field label="B/L No." value={decl.bl_number} />
+        <Field label="Vessel" value={decl.vessel_name} />
+        <Field label="Port of Loading" value={decl.port_of_loading} />
+        <Field label="Port of Discharge" value={decl.port_of_discharge} />
       </Section>
 
-      <Section title="Nilai & Kemasan">
-        <Field label="Mata Uang" value={decl.currency} />
-        <Field label="Nilai Pabean" value={decl.declared_value?.toLocaleString()} />
-        <Field label="Nilai CIF" value={decl.cif_value?.toLocaleString()} />
-        <Field label="Berat Kotor (kg)" value={decl.gross_weight?.toLocaleString()} />
+      <Section title="Value & Packaging">
+        <Field label="Currency" value={decl.currency} />
+        <Field label="Customs Value" value={decl.declared_value?.toLocaleString()} />
+        <Field label="CIF Value" value={decl.cif_value?.toLocaleString()} />
+        <Field label="Gross Weight (kg)" value={decl.gross_weight?.toLocaleString()} />
       </Section>
 
       {/* Goods table */}
@@ -168,13 +213,13 @@ export default function DeclarationDetail() {
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 7 }}>
             <Package size={14} color="var(--text-muted)"/>
             <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-              Barang ({goods.length} item)
+              Goods ({goods.length} items)
             </span>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['#','HS Code','Deskripsi','Qty','Satuan','Harga Satuan','Total','Asal'].map(h => (
+                {['#','HS Code','Description','Qty','Unit','Unit Price','Total','Origin'].map(h => (
                   <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{h}</th>
                 ))}
               </tr>

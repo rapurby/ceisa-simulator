@@ -4,10 +4,10 @@ import { declarationAPI } from '../services/api.js'
 import { Search, Filter, ChevronRight } from 'lucide-react'
 
 const FILTERS = [
-  { value: '', label: 'Semua Status' },
+  { value: '', label: 'All Status' },
   { value: 'pending',  label: 'Pending' },
-  { value: 'accepted', label: 'Diterima' },
-  { value: 'rejected', label: 'Ditolak' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'rejected', label: 'Rejected' },
 ]
 
 export default function DeclarationList() {
@@ -36,8 +36,8 @@ export default function DeclarationList() {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800 }}>Deklarasi Masuk</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{data.length} deklarasi diterima dari CDP</p>
+        <h1 style={{ fontSize: 22, fontWeight: 800 }}>Incoming Declarations</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{data.length} declarations received from CDP</p>
       </div>
 
       {/* Toolbar */}
@@ -45,7 +45,7 @@ export default function DeclarationList() {
         <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
           <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Cari importir, nomor registrasi, invoice..."
+            placeholder="Search importer, registration number, invoice..."
             style={{ width: '100%', padding: '8px 10px 8px 30px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' }} />
         </div>
         <div style={{ position: 'relative' }}>
@@ -60,14 +60,14 @@ export default function DeclarationList() {
       {/* Table */}
       <div style={{ background: 'var(--card)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Memuat...</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Tidak ada deklarasi ditemukan</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No declarations found</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['No. Registrasi','Importir','Invoice','Nilai (CIF)','Barang','Status','Diterima'].map(h => (
+                {['Reg. Number','Importer','Invoice','CIF Value','Goods','Status','Received'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
                 ))}
                 <th></th>
@@ -87,7 +87,7 @@ export default function DeclarationList() {
                   <td style={{ padding: '10px 14px' }}>{d.goods_count ?? '—'} item</td>
                   <td style={{ padding: '10px 14px' }}><span className={`badge badge-${d.status}`}>{d.status}</span></td>
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>
-                    {d.received_at ? new Date(d.received_at).toLocaleString('id-ID') : '—'}
+                    {d.received_at ? new Date(d.received_at).toLocaleString('en-US') : '—'}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <Link to={`/declarations/${d.id}`} style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
