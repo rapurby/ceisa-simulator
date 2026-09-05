@@ -8,7 +8,7 @@ from app.models.declaration import IncomingDeclaration, DeclarationStatus
 from app.models.user import User
 from app.core.config import settings
 from typing import Optional
-import datetime, uuid, logging, httpx
+import datetime, uuid, logging, httpx, base64
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +151,41 @@ async def get_source_document(
         headers={
             "Content-Disposition": resp.headers.get("content-disposition", "inline"),
         },
+    )
+
+
+@router.get("/declarations/{declaration_id}/aju-excel",
+            summary="Download Excel AJU yang dilampirkan CDP saat submit H2H "
+                    "(ASUMSI SEMENTARA: base64 di payload.attachment.data — "
+                    "belum terverifikasi ke spek H2H CEISA asli)")
+async def get_aju_excel(
+    declaration_id: str,
+    current_user: User = Depends(require_role("admin", "officer")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Decode & serve the Excel AJU attachment CDP sent alongside the H2H payload."""
+    result = await db.execute(select(IncomingDeclaration).where(IncomingDeclaration.id == declaration_id))
+    decl = result.scalar_one_or_none()
+    if not decl:
+        raise HTTPException(404, "Declaration not found")
+
+    attachment = (decl.raw_payload or {}).get("attachment")
+    if not attachment or not attachment.get("data"):
+        raise HTTPException(404, "No Excel AJU attachment found on this declaration")
+
+    try:
+        file_bytes = base64.b64decode(attachment["data"])
+    except Exception:
+        raise HTTPException(500, "Attachment data is not valid base64")
+
+    filename = attachment.get("filename", f"AJU_{str(decl.id)[:8]}.xlsx")
+    return Response(
+        content=file_bytes,
+        media_type=attachment.get(
+            "content_type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
