@@ -216,6 +216,8 @@ def _serialize(d: IncomingDeclaration, full: bool = False) -> dict:
         "updated_at": d.updated_at.isoformat() if d.updated_at else None,
         # True kalau CDP_API_URL dikonfigurasi dan cdp_declaration_id ada → bisa tampilkan tombol view doc
         "has_document": bool(settings.CDP_API_URL and d.cdp_declaration_id),
+        # True kalau CDP melampirkan Excel AJU di payload H2H → bisa tampilkan tombol download
+        "has_aju_excel": bool((d.raw_payload or {}).get("attachment", {}).get("data")),
     }
     if full:
         out["raw_payload"] = d.raw_payload

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { declarationAPI } from '../services/api.js'
-import { ArrowLeft, CheckCircle, XCircle, Clock, Package, FileText, MessageSquare } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Clock, Package, FileText, FileSpreadsheet, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const Field = ({ label, value }) => (
@@ -63,6 +63,22 @@ export default function DeclarationDetail() {
       window.open(url, '_blank')
     } catch {
       toast.error('Failed to retrieve document from CDP')
+    }
+  }
+
+  const handleDownloadExcel = async () => {
+    try {
+      const resp = await declarationAPI.ajuExcel(decl.id)
+      const url = URL.createObjectURL(resp.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `AJU_${decl.id.slice(0, 8)}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Failed to retrieve Excel AJU attachment')
     }
   }
   const payload = decl.raw_payload || {}
@@ -135,6 +151,16 @@ export default function DeclarationDetail() {
               fontSize: 12, cursor: 'pointer', fontWeight: 500,
             }}>
               <FileText size={13}/> View Original Document
+            </button>
+          )}
+          {decl.has_aju_excel && (
+            <button onClick={handleDownloadExcel} style={{
+              marginTop: 8, display: 'flex', alignItems: 'center', gap: 5,
+              padding: '6px 10px', borderRadius: 7, border: '1px solid var(--border)',
+              background: 'var(--bg)', color: 'var(--text-secondary)',
+              fontSize: 12, cursor: 'pointer', fontWeight: 500,
+            }}>
+              <FileSpreadsheet size={13}/> Download Excel AJU
             </button>
           )}
         </div>

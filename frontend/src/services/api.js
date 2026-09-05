@@ -33,6 +33,7 @@ export const declarationAPI = {
   review:    (id, body) => api.patch(`/declarations/${id}/review`, body),
   stats:     ()       => api.get('/declarations/stats'),
   sourceDoc: (id)     => api.get(`/declarations/${id}/source-document`, { responseType: 'blob' }),
+  ajuExcel:  (id)     => api.get(`/declarations/${id}/aju-excel`, { responseType: 'blob' }),
 }
 
 export default api
