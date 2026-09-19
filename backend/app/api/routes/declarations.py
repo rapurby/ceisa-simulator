@@ -88,16 +88,43 @@ async def review_declaration(
     await db.commit()
     await db.refresh(decl)
 
-    # Callback ke CDP agar status di DeclarAI ikut terupdate
-    if settings.CDP_API_URL and decl.cdp_declaration_id:
-        await _notify_cdp(decl.cdp_declaration_id, action, body.get("notes", ""))
+    # Callback ke CDP agar status di DeclarAI ikut terupdate.
+    # Hasilnya dikembalikan ke UI: kalau gagal, petugas harus tahu bahwa
+    # keputusannya belum sampai ke DeclarAI — sebelumnya ini gagal diam-diam
+    # dan orang mengira rejection-nya tidak berfungsi.
+    callback = {"attempted": False, "ok": False, "reason": None}
+    if not settings.CDP_API_URL:
+        callback["reason"] = "CDP_API_URL belum dikonfigurasi di server CEISA"
+        logger.error("❌ Callback ke CDP dilewati: CDP_API_URL kosong")
+    elif not decl.cdp_declaration_id:
+        callback["reason"] = "Deklarasi ini tidak punya ID asal dari CDP"
+        logger.warning("⚠️ Callback dilewati: cdp_declaration_id kosong")
+    else:
+        callback["attempted"] = True
+        callback["ok"] = await _notify_cdp(
+            decl.cdp_declaration_id, action, body.get("notes", "")
+        )
+        if not callback["ok"]:
+            callback["reason"] = "CDP tidak merespons dengan benar — cek log server"
 
-    return _serialize(decl, full=True)
+    out = _serialize(decl, full=True)
+    out["cdp_callback"] = callback
+    return out
 
 
-async def _notify_cdp(cdp_declaration_id: str, action: str, notes: str = ""):
-    """Kirim callback ke CDP backend setelah review."""
-    url = f"{settings.CDP_API_URL}/api/v1/declarations/{cdp_declaration_id}/ceisa-callback"
+async def _notify_cdp(cdp_declaration_id: str, action: str, notes: str = "") -> bool:
+    """
+    Kirim callback ke CDP backend setelah review.
+    Mengembalikan True kalau CDP mengonfirmasi, supaya pemanggil bisa
+    memberi tahu petugas ketika keputusannya tidak sampai ke DeclarAI.
+    """
+    base = settings.CDP_API_URL.rstrip("/")
+    # Tanpa skema, httpx menolak URL-nya — ini pernah bikin callback gagal
+    # diam-diam karena env var diisi tanpa "https://".
+    if not base.startswith(("http://", "https://")):
+        base = "https://" + base
+
+    url = f"{base}/api/v1/declarations/{cdp_declaration_id}/ceisa-callback"
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
@@ -107,10 +134,12 @@ async def _notify_cdp(cdp_declaration_id: str, action: str, notes: str = ""):
             )
             if resp.status_code == 200:
                 logger.info(f"✅ CDP callback OK: {cdp_declaration_id} → {action}")
-            else:
-                logger.error(f"❌ CDP callback HTTP {resp.status_code}: {resp.text}")
+                return True
+            logger.error(f"❌ CDP callback HTTP {resp.status_code}: {resp.text}")
+            return False
     except Exception as e:
-        logger.error(f"❌ CDP callback gagal (tidak menghalangi): {e}")
+        logger.error(f"❌ CDP callback gagal: {e}")
+        return False
 
 @router.get("/declarations/{declaration_id}/source-document",
             summary="Proxy ke dokumen asli di CDP — butuh CDP_API_URL dikonfigurasi")
